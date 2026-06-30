@@ -123,3 +123,16 @@ C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\zh-Hant\Microsoft.CodeAnalysis.
 C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\.env
 C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\DotNetEnv.dll
 C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Superpower.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\AngleSharp.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\AngleSharp.Css.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\BCrypt-Net-Next.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\HtmlSanitizer.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Microsoft.Bcl.Cryptography.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\USER\DEV\UrlShortener\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll

@@ -7,6 +7,7 @@ public class UrlShortenerContext : DbContext
   public DbSet<User> Users { get; set; }
   public DbSet<ShortUrl> ShortUrls { get; set; }
   public DbSet<ClickAnalytic> ClickAnalytics { get; set; }
+  public DbSet<Refresh> Refreshes { get; set; }
 
   protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -54,6 +55,15 @@ public class UrlShortenerContext : DbContext
                   .WithMany(s => s.ClickAnalytics)
                   .HasForeignKey(c => c.ShortUrlId)
                   .OnDelete(DeleteBehavior.Cascade); // Deleting URL deletes its click history
+        });
+
+        modelBuilder.Entity<Refresh>(entity =>
+        {
+          entity.HasKey(r => r.Id);
+          entity.Property(r => r.Token).HasMaxLength(256).IsRequired();
+          entity.HasIndex(r => r.Token).IsUnique();
+          entity.Property(r => r.Email).HasMaxLength(256).IsRequired();
+          entity.HasIndex(r => r.Email).IsUnique();
         });
 }
 }

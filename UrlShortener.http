@@ -1,6 +1,35 @@
 @UrlShortener_HostAddress = http://localhost:5277
 
-GET {{UrlShortener_HostAddress}}/weatherforecast/
-Accept: application/json
+POST http://localhost:5277/api/auth/register
+Content-Type: application/json
+
+{
+  "Email": "Wham@example.com",
+  "Password": "Wham@123"
+}
+
+###
+
+GET http://localhost:5277/api/secure
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJXaGFtQGV4YW1wbGUuY29tIiwianRpIjoiNzk0ZjI3NzAtZGUyMi00Yzg2LWI3YTctYjg4YjY0NTZmOWIxIiwicm9sZSI6InVzZXIiLCJleHAiOjE3ODI4MzMzMTYsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTI3NyIsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTI3NyJ9.EaiqHX6X0qFBeUZBeUhLNveKpvI-BhrZHGCiv-S9__E
+
+###
+
+POST http://localhost:5277/api/auth/refresh
+
+###
+
+POST http://localhost:5277/api/auth/login
+Content-Type: application/json
+
+{
+  "Email": "Wham@example.com",
+  "Password": "Wham@123"
+}
+
+###
+
+
+GET http://localhost:5277
 
 ###
