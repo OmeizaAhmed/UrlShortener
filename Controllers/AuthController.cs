@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Models;
 [ApiController]
-[Route("api/{controller}")]
+[Route("api/[controller]")]
 public class AuthController: ControllerBase
 {
   private UrlShortenerContext _context;

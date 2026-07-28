@@ -13,3 +13,4 @@ namespace UrlShortener.Models
     public ICollection<ClickAnalytic> ClickAnalytics = new List<ClickAnalytic>();
   }
 }
+// http://localhost:5277/tK7eqF

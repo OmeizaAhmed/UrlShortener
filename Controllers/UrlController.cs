@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using UrlShortener.Models;
 
 [ApiController]
-[Route("api/{controller}")]
+[Route("api/[controller]")]
 [Authorize]
 public class UrlController : ControllerBase
 {
@@ -48,9 +48,11 @@ public class UrlController : ControllerBase
     }
     int userId = Convert.ToInt32(id);
 
-    var urls = _context.ShortUrls.Where(s => s.UserId == userId).ToList();
+    var urls = await _context.ShortUrls
+      .Where(s => s.UserId == userId)
+      .ToListAsync();
 
-    return urls.Count > 0 ?  Ok(urls) : Ok("You have no short urls"); 
+    return Ok(urls);
   }
 
   [HttpDelete("{id}")]
