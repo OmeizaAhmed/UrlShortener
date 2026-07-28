@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using UrlShortener.Models;
 
 public class TokenServices
 {
@@ -18,13 +19,14 @@ public class TokenServices
     _lifeTime = Convert.ToInt32(Environment.GetEnvironmentVariable("JWT_LIFETIME"));
   }
 
-  public string GenerateToken(string username, string role)
+  public string GenerateToken(string userId, string username, string role)
   {
     var credential = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key)), "HS256");
 
     var claims = new[]
     {
-      new Claim(JwtRegisteredClaimNames.Sub, username),
+      new Claim(JwtRegisteredClaimNames.Sub, userId),
+      new Claim(JwtRegisteredClaimNames.Email, username),
       new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
       new Claim("role", role)
     };

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using AngleSharp.Dom;
 
 namespace UrlShortener.Models
 {
@@ -13,8 +14,13 @@ namespace UrlShortener.Models
   public class JwtResponse
 {
     public required string Token { get; set; }
-    public string ExpiresIn { get; set; }
+    public required string ExpiresIn { get; set; }
     public required string TokenType { get; set; }
 }
+
+public class LongUrl
+  {
+    public required string Url { get; set; }
+  }
 
 }

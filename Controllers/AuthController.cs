@@ -1,4 +1,5 @@
 using Ganss.Xss;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Models;
@@ -32,10 +33,17 @@ public class AuthController: ControllerBase
 
     var newUser = new User{Email = cleanEmail, PasswordHash = hashedPassword};
 
-    await _context.Users.AddAsync(newUser);
+    _context.Users.Add(newUser);
+
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == newUser.Email);
+
+    if(user == null)
+    {
+      return BadRequest();
+    }
     await _context.SaveChangesAsync();
 
-    var jwtTokenInfo = await ProcessTokenAndCookies(cleanEmail, "user");
+    var jwtTokenInfo = await ProcessTokenAndCookies(Convert.ToString(user.Id), cleanEmail, "user");
 
     return Ok(jwtTokenInfo);
   }
@@ -65,7 +73,7 @@ public class AuthController: ControllerBase
  
 
     // generate jwt and refresh token
-    var token = await ProcessTokenAndCookies(cleanEmail, "user");
+    var token = await ProcessTokenAndCookies(Convert.ToString(registeredUser.Id), cleanEmail, "user");
     return Ok(token);
   }
 
@@ -89,14 +97,14 @@ public class AuthController: ControllerBase
     if(registeredUser == null) return BadRequest();
     // generate new jwt and new refresh
 
-    var token = await ProcessTokenAndCookies(registeredUser.Email, "user"); 
+    var token = await ProcessTokenAndCookies(Convert.ToString(registeredUser.Id), registeredUser.Email, "user"); 
     
     return Ok(token);
   }
 
-  private async Task<JwtResponse> ProcessTokenAndCookies(string email, string role)
+  private async Task<JwtResponse> ProcessTokenAndCookies(string userId, string email, string role)
   {
-    var token = _tokenService.GenerateToken(email, role);
+    var token = _tokenService.GenerateToken(userId, email, role);
     // delete oldtokens
     var oldTokens = _context.Refreshes.Where(r => r.Email == email).ToList();
     _context.Refreshes.RemoveRange(oldTokens);
@@ -104,7 +112,7 @@ public class AuthController: ControllerBase
 
     // generate refresh
     var refresh = _tokenService.GenerateRefreshToken(email);
-    await _context.Refreshes.AddAsync(new Refresh{Token = refresh.Token, Email = refresh.UserName});
+    _context.Refreshes.Add(new Refresh{Token = refresh.Token, Email = refresh.UserName});
     await _context.SaveChangesAsync();
     HttpContext.Response.Cookies.Append("X-Refresh-Token", refresh.Token, new CookieOptions
     {

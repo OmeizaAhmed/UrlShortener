@@ -1,2 +1,21 @@
 /appsettings.Development.json
 .env
+
+# Build output
+bin/
+obj/
+
+# IDE and editor files
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Local databases
+*.db
+*.sqlite
