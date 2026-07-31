@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Models;
+using UrlShortener.Common;
 
+namespace UrlShortener.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -23,17 +25,17 @@ public class UrlController : ControllerBase
   {
     var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
     var longUrl = url.Url;
-    if (string.IsNullOrEmpty(longUrl.Trim()))
+    if (string.IsNullOrWhiteSpace(longUrl))
     {
-      return BadRequest();
+      return BadRequest(ApiResponse<object>.FailureResponse("Invalid URL", "URL cannot be empty"));
     }
     var sanitizer = new HtmlSanitizer();
     longUrl = sanitizer.Sanitize(longUrl);
-    var newUrl = new ShortUrl{OriginalUrl = longUrl, ShortCode = GenerateShortCode(), UserId = Convert.ToInt32(id)};
+    ShortUrl newUrl = new ShortUrl{OriginalUrl = longUrl, ShortCode = GenerateShortCode(), UserId = Convert.ToInt32(id)};
     _context.ShortUrls.Add(newUrl);
     await _context.SaveChangesAsync();
     
-    return Ok(newUrl);
+    return CreatedAtAction(nameof(GetUrl), new { shortCode = newUrl.ShortCode }, ApiResponse<ShortUrl>.SuccessResponse(newUrl, "URL stored successfully"));
   }
 
   [HttpGet]
@@ -42,11 +44,11 @@ public class UrlController : ControllerBase
     var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
     if(id == null)
     {
-      return Unauthorized();
+      return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
     }
     int userId = Convert.ToInt32(id);
 
-    var urls = await _context.ShortUrls
+    List<urlInfo> urls = await _context.ShortUrls
       .Where(s => s.UserId == userId)
       .Select(s => new urlInfo
       {
@@ -60,16 +62,42 @@ public class UrlController : ControllerBase
       ;
     
 
-    return Ok(urls);
+    return Ok(ApiResponse<List<urlInfo>>.SuccessResponse(urls, "URLs retrieved successfully"));
   }
+  [HttpGet("{shortCode}")]
+  public async Task<IActionResult> GetUrl(string shortCode)
+  {
+    var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if(id == null)
+    {
+      return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
+    }
+    int userId = Convert.ToInt32(id);
 
+    var url = await _context.ShortUrls.FirstOrDefaultAsync(s => s.ShortCode == shortCode && s.UserId == userId);
+    if(url == null)
+    {
+      return NotFound(ApiResponse<object>.FailureResponse("Not Found", "URL not found"));
+    }
+    
+    return Ok(ApiResponse<ShortUrl>.SuccessResponse(url, "URL retrieved successfully"));
+  }
   [HttpDelete("{id}")]
   public async Task<IActionResult> DeleteUrl(int id)
   {
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if(userId == null)
+    {
+      return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
+    }
     var url = await _context.ShortUrls.FirstOrDefaultAsync(s => s.Id == id);
     if(url == null)
     {
-      return NotFound();
+      return NotFound(ApiResponse<object>.FailureResponse("Not Found", "URL not found"));
+    }
+    if(url.UserId != Convert.ToInt32(userId))
+    {
+      return Forbid();
     }
     _context.ShortUrls.Remove(url);
     await _context.SaveChangesAsync();
@@ -81,26 +109,26 @@ public class UrlController : ControllerBase
     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
     if(userId == null)
     {
-      return Unauthorized();
+      return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
     }
     var existingUrl = await _context.ShortUrls.FirstOrDefaultAsync(s => s.ShortCode == shortCode);
     if(existingUrl == null)
     {
-      return NotFound();
+      return NotFound(ApiResponse<object>.FailureResponse("Not Found", "URL not found"));
     }
     if(existingUrl.UserId != Convert.ToInt32(userId))
     {
       return Forbid();
     }
     var sanitizer = new HtmlSanitizer();
-    if(string.IsNullOrEmpty(url.Url.Trim()))
+    if(string.IsNullOrWhiteSpace(url.Url))
     {
-      return BadRequest("Url cannot be empty");
+      return BadRequest(ApiResponse<object>.FailureResponse("Invalid URL", "URL cannot be empty"));
     }
     existingUrl.OriginalUrl = sanitizer.Sanitize(url.Url);
     existingUrl.UpdatedAt = DateTime.UtcNow;
     await _context.SaveChangesAsync();
-    return Ok(existingUrl);
+    return Ok(ApiResponse<ShortUrl>.SuccessResponse(existingUrl, "URL updated successfully"));
   }
 
   private string GenerateShortCode(int length = 6)

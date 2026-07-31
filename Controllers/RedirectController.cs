@@ -1,7 +1,8 @@
-
+namespace UrlShortener.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Services;
+using UrlShortener.Common;
 public class RedirectController : ControllerBase
 {
   private readonly UrlShortenerContext _context;
@@ -20,7 +21,7 @@ public class RedirectController : ControllerBase
       .FirstOrDefaultAsync(s => s.ShortCode == shortUrl);
 
     if (entry == null)
-      return NotFound();
+      return NotFound(ApiResponse<object>.FailureResponse("Not Found", "Short URL not found"));
 
     // Increment click count
     entry.ClickCount++;

@@ -2,8 +2,10 @@ using Ganss.Xss;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using UrlShortener.Common;
 using UrlShortener.Models;
 using UrlShortener.Services;
+namespace UrlShortener.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController: ControllerBase
@@ -28,7 +30,7 @@ public class AuthController: ControllerBase
 
     var oldUser = await _context.Users.FirstOrDefaultAsync( u => u.Email == cleanEmail);
 
-    if(oldUser != null) return BadRequest("email already exist, please login instead");
+    if(oldUser != null) return BadRequest(ApiResponse<object>.FailureResponse("Email Exists", "email already exist, please login instead" ));
 
     string hashedPassword = _passwordService.HashPassword(cleanPassword);
 
@@ -41,12 +43,12 @@ public class AuthController: ControllerBase
 
     if(user == null)
     {
-      return BadRequest();
+      return BadRequest(ApiResponse<object>.FailureResponse("User Registration Failed", "Failed to register user, please try again"));
     }
 
     var jwtTokenInfo = await ProcessTokenAndCookies(Convert.ToString(user.Id), cleanEmail, "user");
 
-    return Ok(jwtTokenInfo);
+    return Ok(ApiResponse<JwtResponse>.SuccessResponse(jwtTokenInfo, "User Registered Successfully"));
   }
 
   [HttpPost("login")]
@@ -63,19 +65,19 @@ public class AuthController: ControllerBase
 
     if(registeredUser == null)
     {
-      return BadRequest("Invalid Login credential check email and password");
+      return BadRequest(ApiResponse<object>.FailureResponse("Invalid Login", "Invalid Login credential check email and password"));
     }
 
 
     // compare password
     bool isValidPassword = _passwordService.VerifyPassword(cleanPassword, registeredUser.PasswordHash);
 
-    if(!isValidPassword) return BadRequest("Invalid Login credential check email and password");
+    if(!isValidPassword) return BadRequest(ApiResponse<object>.FailureResponse("Invalid Login", "Invalid Login credential check email and password"));
  
 
     // generate jwt and refresh token
     var token = await ProcessTokenAndCookies(Convert.ToString(registeredUser.Id), cleanEmail, "user");
-    return Ok(token);
+    return Ok(ApiResponse<JwtResponse>.SuccessResponse(token, "Login Successful"));
   }
 
   [HttpPost("refresh")]
@@ -83,31 +85,31 @@ public class AuthController: ControllerBase
   {
     // get refresh token from cookie
     HttpContext.Request.Cookies.TryGetValue("X-Refresh-Token", out string? refresh);
-    if(string.IsNullOrEmpty(refresh)) return BadRequest("Cookie Invalid or Empty");
+    if(string.IsNullOrEmpty(refresh)) return BadRequest(ApiResponse<object>.FailureResponse("Invalid Cookie", "Cookie Invalid or Empty"));
 
     // get refresh token from database
     var oldRefresh = await _context.Refreshes.FirstOrDefaultAsync(r => r.Token == refresh);
-    if(oldRefresh == null) return BadRequest("Invalid Refresh Cookie");
+    if(oldRefresh == null) return BadRequest(ApiResponse<object>.FailureResponse("Invalid Refresh Token", "Refresh Token Invalid or Empty"));
         
     // check it has not yet expire
-    if(oldRefresh.ExpireAt < DateTime.UtcNow) return BadRequest("Expired Refresh Token");
+    if(oldRefresh.ExpireAt < DateTime.UtcNow) return BadRequest(ApiResponse<object>.FailureResponse("Expired Refresh Token", "Refresh Token has expired"));
 
     // validate if the user in the refresh is a registered user
     var registeredUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == oldRefresh.Email);
 
-    if(registeredUser == null) return BadRequest();
+    if(registeredUser == null) return BadRequest(ApiResponse<object>.FailureResponse("Invalid Refresh Token", "User associated with refresh token not found"));
     // generate new jwt and new refresh
 
     var token = await ProcessTokenAndCookies(Convert.ToString(registeredUser.Id), registeredUser.Email, "user"); 
     
-    return Ok(token);
+    return Ok(ApiResponse<JwtResponse>.SuccessResponse(token, "Token Refreshed Successfully"));
   }
 
   private async Task<JwtResponse> ProcessTokenAndCookies(string userId, string email, string role)
   {
     var token = _tokenService.GenerateToken(userId, email, role);
     // delete oldtokens
-    var oldTokens = _context.Refreshes.Where(r => r.Email == email).ToList();
+    var oldTokens = await _context.Refreshes.Where(r => r.Email == email).ToListAsync();
     _context.Refreshes.RemoveRange(oldTokens);
     await _context.SaveChangesAsync();
 
@@ -120,6 +122,7 @@ public class AuthController: ControllerBase
       SameSite = SameSiteMode.Strict,
       HttpOnly = true,
       Expires = DateTimeOffset.UtcNow.AddDays(7)
+
     });
 
     return new JwtResponse 

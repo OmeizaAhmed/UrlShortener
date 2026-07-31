@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using UrlShortener.Services;
+using UrlShortener.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 DotNetEnv.Env.Load();
@@ -75,7 +76,7 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => "I am root :)");
+app.MapGet("/", () => ApiResponse<string>.SuccessResponse("Welcome to the URL Shortener API", "API is running successfully"));
 
 app.MapControllers();
 
@@ -99,7 +100,7 @@ internal class ExceptionHandlingMiddleware
         catch (Exception ex)
         {
             context.Response.StatusCode = 500;
-            await context.Response.WriteAsJsonAsync(new { error = "internal server error" });
+            await context.Response.WriteAsJsonAsync(ApiResponse<object>.FailureResponse("Internal Server Error", "Internal server error occurred. Please try again later."));
             Console.WriteLine($"Exception: {ex.Message}");
         }
     }
