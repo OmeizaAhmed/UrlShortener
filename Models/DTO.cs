@@ -23,3 +23,12 @@ public class LongUrl
   }
 
 }
+
+public class urlInfo
+{
+  public required string OriginalUrl { get; set; }
+  public required string ShortCode { get; set; }
+  public required int ClickCount { get; set; }
+  public required DateTime CreatedAt { get; set; }
+  public required DateTime UpdatedAt { get; set; }
+}

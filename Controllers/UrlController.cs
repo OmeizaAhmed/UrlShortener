@@ -14,8 +14,6 @@ public class UrlController : ControllerBase
   private UrlShortenerContext _context;
 
   private static readonly string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static readonly Random random = new Random();
-
   public UrlController(UrlShortenerContext context)
   {
     _context = context;
@@ -50,7 +48,17 @@ public class UrlController : ControllerBase
 
     var urls = await _context.ShortUrls
       .Where(s => s.UserId == userId)
-      .ToListAsync();
+      .Select(s => new urlInfo
+      {
+        OriginalUrl = s.OriginalUrl,
+        ShortCode = s.ShortCode,
+        ClickCount = s.ClickCount,
+        CreatedAt = s.CreatedAt,
+        UpdatedAt = s.UpdatedAt
+      }).OrderByDescending(s => s.UpdatedAt)
+      .ToListAsync()
+      ;
+    
 
     return Ok(urls);
   }
@@ -85,7 +93,12 @@ public class UrlController : ControllerBase
       return Forbid();
     }
     var sanitizer = new HtmlSanitizer();
+    if(string.IsNullOrEmpty(url.Url.Trim()))
+    {
+      return BadRequest("Url cannot be empty");
+    }
     existingUrl.OriginalUrl = sanitizer.Sanitize(url.Url);
+    existingUrl.UpdatedAt = DateTime.UtcNow;
     await _context.SaveChangesAsync();
     return Ok(existingUrl);
   }
@@ -95,7 +108,7 @@ public class UrlController : ControllerBase
         char[] buffer = new char[length];
         for (int i = 0; i < length; i++)
         {
-            buffer[i] = chars[random.Next(chars.Length)];
+            buffer[i] = chars[Random.Shared.Next(chars.Length)];
         }
         return new string(buffer);
     }

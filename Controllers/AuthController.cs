@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Models;
+using UrlShortener.Services;
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController: ControllerBase
@@ -42,7 +43,6 @@ public class AuthController: ControllerBase
     {
       return BadRequest();
     }
-    await _context.SaveChangesAsync();
 
     var jwtTokenInfo = await ProcessTokenAndCookies(Convert.ToString(user.Id), cleanEmail, "user");
 
@@ -83,7 +83,7 @@ public class AuthController: ControllerBase
   {
     // get refresh token from cookie
     HttpContext.Request.Cookies.TryGetValue("X-Refresh-Token", out string? refresh);
-    if(string.IsNullOrEmpty(refresh)) return BadRequest("Cookie Invalid or Empyty");
+    if(string.IsNullOrEmpty(refresh)) return BadRequest("Cookie Invalid or Empty");
 
     // get refresh token from database
     var oldRefresh = await _context.Refreshes.FirstOrDefaultAsync(r => r.Token == refresh);

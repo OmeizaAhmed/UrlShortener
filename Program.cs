@@ -1,14 +1,15 @@
 using System.Text;
-using AngleSharp.Dom;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using UrlShortener.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 DotNetEnv.Env.Load();
 builder.Services.AddDbContext<UrlShortenerContext>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<TokenServices>();
+builder.Services.AddScoped<IAnalyticService, AnalyticService>();
 builder.Services.AddControllers();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>

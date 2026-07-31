@@ -8,9 +8,10 @@ namespace UrlShortener.Models
     public int UserId { get; set; }
     public User? User { get; set;}
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ExpiresAt { get; set; }
     public int ClickCount { get; set; }
-    public ICollection<ClickAnalytic> ClickAnalytics = new List<ClickAnalytic>();
+    public ICollection<ClickAnalytic> ClickAnalytics { get; set; } = new List<ClickAnalytic>();
   }
 }
 // http://localhost:5277/tK7eqF

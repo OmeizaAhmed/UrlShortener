@@ -1,14 +1,16 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using UrlShortener.Services;
 public class RedirectController : ControllerBase
 {
   private readonly UrlShortenerContext _context;
+  private readonly IAnalyticService _analyticService;
 
-  public RedirectController(UrlShortenerContext context)
+  public RedirectController(UrlShortenerContext context, IAnalyticService analyticService)
   {
     _context = context;
+    _analyticService = analyticService;
   }
 
   [HttpGet("{shortUrl}")]
@@ -20,9 +22,14 @@ public class RedirectController : ControllerBase
     if (entry == null)
       return NotFound();
 
-    // update click counter
+    // Increment click count
     entry.ClickCount++;
     await _context.SaveChangesAsync();
+
+    // log click analytic
+    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    var userAgent = Request.Headers["User-Agent"].ToString();
+    await _analyticService.LogClickAsync(entry.Id, ipAddress, userAgent);
 
     return Redirect(entry.OriginalUrl);
   }
