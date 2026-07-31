@@ -27,13 +27,14 @@ public class AuthController: ControllerBase
 
     var oldUser = await _context.Users.FirstOrDefaultAsync( u => u.Email == cleanEmail);
 
-    if(oldUser != null) return BadRequest();
+    if(oldUser != null) return BadRequest("email already exist, please login instead");
 
     string hashedPassword = _passwordService.HashPassword(cleanPassword);
 
     var newUser = new User{Email = cleanEmail, PasswordHash = hashedPassword};
 
     _context.Users.Add(newUser);
+    await _context.SaveChangesAsync();
 
     var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == newUser.Email);
 

@@ -67,6 +67,28 @@ public class UrlController : ControllerBase
     await _context.SaveChangesAsync();
     return NoContent();
   }
+  [HttpPut("{shortCode}")]
+  public async Task<IActionResult> UpdateUrl(string shortCode, [FromBody] LongUrl url)
+  {
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if(userId == null)
+    {
+      return Unauthorized();
+    }
+    var existingUrl = await _context.ShortUrls.FirstOrDefaultAsync(s => s.ShortCode == shortCode);
+    if(existingUrl == null)
+    {
+      return NotFound();
+    }
+    if(existingUrl.UserId != Convert.ToInt32(userId))
+    {
+      return Forbid();
+    }
+    var sanitizer = new HtmlSanitizer();
+    existingUrl.OriginalUrl = sanitizer.Sanitize(url.Url);
+    await _context.SaveChangesAsync();
+    return Ok(existingUrl);
+  }
 
   private string GenerateShortCode(int length = 6)
     {

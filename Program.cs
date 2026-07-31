@@ -1,4 +1,5 @@
 using System.Text;
+using AngleSharp.Dom;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -68,6 +69,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -76,3 +79,27 @@ app.MapGet("/", () => "I am root :)");
 app.MapControllers();
 
 app.Run();
+
+internal class ExceptionHandlingMiddleware
+{
+    private readonly RequestDelegate _next;
+
+    public ExceptionHandlingMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
+        {
+            await _next(context);
+        }
+        catch (Exception ex)
+        {
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsJsonAsync(new { error = "internal server error" });
+            Console.WriteLine($"Exception: {ex.Message}");
+        }
+    }
+}
