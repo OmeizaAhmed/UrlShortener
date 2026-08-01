@@ -79,8 +79,55 @@ public class UrlController : ControllerBase
     {
       return NotFound(ApiResponse<object>.FailureResponse("Not Found", "URL not found"));
     }
+
+    var analytics = await _context.ClickAnalytics
+      .Where(c => c.ShortUrlId == url.Id)
+      .AsNoTracking()
+      .ToListAsync();
+
+    var now = DateTime.UtcNow;
+    var oneDayAgo = now.AddDays(-1);
+    var sevenDaysAgo = now.AddDays(-7);
+    var thirtyDaysAgo = now.AddDays(-30);
+
+    var totalClicks = analytics.Count;
+    var uniqueVisitors = analytics
+      .Select(c => c.IpAddress)
+      .Where(ip => !string.IsNullOrWhiteSpace(ip) && ip != "Unknown")
+      .Distinct()
+      .Count();
+
+    var clicksLast24Hours = analytics.Count(c => c.ClickedAt >= oneDayAgo);
+    var clicksLast7Days = analytics.Count(c => c.ClickedAt >= sevenDaysAgo);
+    var clicksLast30Days = analytics.Count(c => c.ClickedAt >= thirtyDaysAgo);
+    var firstClickAt = analytics.OrderBy(c => c.ClickedAt).Select(c => (DateTime?)c.ClickedAt).FirstOrDefault();
+    var lastClickAt = analytics.OrderByDescending(c => c.ClickedAt).Select(c => (DateTime?)c.ClickedAt).FirstOrDefault();
+
+    var activeDays = Math.Max((now - url.CreatedAt).TotalDays, 1);
+    var averageClicksPerDay = Math.Round(totalClicks / activeDays, 2);
+
+    var response = new ShortUrlAnalyticsResponse
+    {
+      Id = url.Id,
+      OriginalUrl = url.OriginalUrl,
+      ShortCode = url.ShortCode,
+      CreatedAt = url.CreatedAt,
+      UpdatedAt = url.UpdatedAt,
+      ExpiresAt = url.ExpiresAt,
+      Kpis = new ShortUrlKpis
+      {
+        TotalClicks = totalClicks,
+        UniqueVisitors = uniqueVisitors,
+        ClicksLast24Hours = clicksLast24Hours,
+        ClicksLast7Days = clicksLast7Days,
+        ClicksLast30Days = clicksLast30Days,
+        FirstClickAt = firstClickAt,
+        LastClickAt = lastClickAt,
+        AverageClicksPerDay = averageClicksPerDay
+      }
+    };
     
-    return Ok(ApiResponse<ShortUrl>.SuccessResponse(url, "URL retrieved successfully"));
+    return Ok(ApiResponse<ShortUrlAnalyticsResponse>.SuccessResponse(response, "URL retrieved successfully"));
   }
   [HttpDelete("{id}")]
   public async Task<IActionResult> DeleteUrl(int id)
