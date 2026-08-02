@@ -19,3 +19,7 @@ obj/
 # Local databases
 *.db
 *.sqlite
+
+#migrations
+Migrations/
+*.Designer.cs

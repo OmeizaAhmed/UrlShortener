@@ -49,6 +49,8 @@ public class UrlShortenerContext : DbContext
             entity.HasKey(c => c.Id);
             entity.Property(c => c.IpAddress).HasMaxLength(45); // Fits IPv6 addresses
             entity.Property(c => c.UserAgent).HasMaxLength(500);
+            entity.Property(c => c.OperatingSystem).HasMaxLength(100);
+            entity.Property(c => c.Browser).HasMaxLength(100);
 
             // Relationship: ShortUrl (1) -> ClickAnalytics (Many)
             entity.HasOne(c => c.ShortUrl)

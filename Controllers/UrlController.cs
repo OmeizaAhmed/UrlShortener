@@ -48,9 +48,9 @@ public class UrlController : ControllerBase
     }
     int userId = Convert.ToInt32(id);
 
-    List<urlInfo> urls = await _context.ShortUrls
+    List<UrlInfo> urls = await _context.ShortUrls
       .Where(s => s.UserId == userId)
-      .Select(s => new urlInfo
+      .Select(s => new UrlInfo
       {
         OriginalUrl = s.OriginalUrl,
         ShortCode = s.ShortCode,
@@ -62,7 +62,7 @@ public class UrlController : ControllerBase
       ;
     
 
-    return Ok(ApiResponse<List<urlInfo>>.SuccessResponse(urls, "URLs retrieved successfully"));
+    return Ok(ApiResponse<List<UrlInfo>>.SuccessResponse(urls, "URLs retrieved successfully"));
   }
   [HttpGet("{shortCode}")]
   public async Task<IActionResult> GetUrl(string shortCode)

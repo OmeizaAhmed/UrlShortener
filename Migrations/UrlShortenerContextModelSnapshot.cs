@@ -29,6 +29,11 @@ namespace UrlShortener.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Browser")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<DateTime>("ClickedAt")
                         .HasColumnType("datetime(6)");
 
@@ -36,6 +41,11 @@ namespace UrlShortener.Migrations
                         .IsRequired()
                         .HasMaxLength(45)
                         .HasColumnType("varchar(45)");
+
+                    b.Property<string>("OperatingSystem")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<int>("ShortUrlId")
                         .HasColumnType("int");
@@ -114,7 +124,7 @@ namespace UrlShortener.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int>("UserId")

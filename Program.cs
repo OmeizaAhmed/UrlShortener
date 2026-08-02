@@ -4,13 +4,34 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using UrlShortener.Services;
 using UrlShortener.Common;
-
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using UAParser;
 var builder = WebApplication.CreateBuilder(args);
 DotNetEnv.Env.Load();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests; // Set the status code for rejected requests
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetSlidingWindowLimiter(clientIp, _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 10, // Maximum number of requests allowed
+            Window = TimeSpan.FromSeconds(10), // Time window for the rate limit
+            SegmentsPerWindow = 10, // Number of segments in the time window
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst, // Order of processing queued requests
+            QueueLimit = 0 // No queueing; reject requests immediately when limit is reached
+        });
+    });
+});
 builder.Services.AddDbContext<UrlShortenerContext>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddSingleton(provider => Parser.GetDefault());
 builder.Services.AddScoped<TokenServices>();
 builder.Services.AddScoped<IAnalyticService, AnalyticService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddControllers();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
@@ -65,13 +86,15 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseRateLimiter();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -105,3 +128,5 @@ internal class ExceptionHandlingMiddleware
         }
     }
 }
+
+
