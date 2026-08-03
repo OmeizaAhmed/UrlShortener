@@ -26,6 +26,12 @@ builder.Services.AddRateLimiter(options =>
         });
     });
 });
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING") ?? throw new Exception("REDIS CONNECTION STRING CAN NOT BE EMPTY");
+    options.InstanceName = "UrlShortenerCache_";
+});
+
 builder.Services.AddDbContext<UrlShortenerContext>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddSingleton(provider => Parser.GetDefault());

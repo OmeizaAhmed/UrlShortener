@@ -1,5 +1,7 @@
 using UrlShortener.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 public interface IDashboardService
 {
@@ -19,13 +21,27 @@ public class DashboardService : IDashboardService
     private readonly UrlShortenerContext _context;
     private static readonly string[] MajorOSList = { "Android", "iOS", "Windows", "Mac OS", "Linux" };
     private static readonly string[] MajorBrowserList = { "Chrome", "Safari", "Firefox", "Edge" };
+    private readonly IDistributedCache _cacheService;
 
-    public DashboardService(UrlShortenerContext context)
+    public DashboardService(UrlShortenerContext context, IDistributedCache cacheService)
     {
         _context = context;
+        _cacheService = cacheService;
     }
     public async Task<SystemAnalyticsResponse> GetSystemAnalyticsResponseAsync()
     {
+        // Check if the analytics data is already cached
+        var cachedData = await _cacheService.GetStringAsync("SystemAnalyticsResponse");
+        
+        if (!string.IsNullOrEmpty(cachedData))
+        {
+            var cachedResponse = JsonSerializer.Deserialize<SystemAnalyticsResponse>(cachedData);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
+        } 
+
         var overview = await GetSystemOverviewAsync();
         var growth = await GetSystemGrowthAsync();
         var clicks = await GetSystemClicksAsync();
@@ -33,7 +49,7 @@ public class DashboardService : IDashboardService
         var topUrls = await GetTopUrlsAsync();
 
 
-        return new SystemAnalyticsResponse
+        var response = new SystemAnalyticsResponse
         {
             Overview = overview,
             Growth = growth,
@@ -41,6 +57,16 @@ public class DashboardService : IDashboardService
             Analytics = analytics,
             TopUrls = topUrls
         };
+        // set time to live for cache
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) // Cache for 10 minutes
+        };
+
+        // Cache the analytics data
+        await _cacheService.SetStringAsync("SystemAnalyticsResponse", JsonSerializer.Serialize(response), cacheOptions);
+
+        return response;
     }
 
     public async Task<SystemOverview> GetSystemOverviewAsync()

@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using UrlShortener.Models;
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;

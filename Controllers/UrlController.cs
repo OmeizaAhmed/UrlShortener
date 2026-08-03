@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Models;
 using UrlShortener.Common;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace UrlShortener.Controllers;
 [ApiController]
@@ -13,17 +15,23 @@ namespace UrlShortener.Controllers;
 [Authorize]
 public class UrlController : ControllerBase
 {
-  private UrlShortenerContext _context;
+  private readonly UrlShortenerContext _context;
+  private readonly IDistributedCache _cacheService;
 
   private static readonly string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  public UrlController(UrlShortenerContext context)
+  public UrlController(UrlShortenerContext context, IDistributedCache cacheService)
   {
     _context = context;
+    _cacheService = cacheService;
   }
   [HttpPost]
   public async Task<IActionResult> StoreUrl([FromBody] LongUrl url)
   {
     var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if(!int.TryParse(id, out int userId))
+    {
+      return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
+    }
     var longUrl = url.Url;
     if (string.IsNullOrWhiteSpace(longUrl))
     {
@@ -31,7 +39,7 @@ public class UrlController : ControllerBase
     }
     var sanitizer = new HtmlSanitizer();
     longUrl = sanitizer.Sanitize(longUrl);
-    ShortUrl newUrl = new ShortUrl{OriginalUrl = longUrl, ShortCode = GenerateShortCode(), UserId = Convert.ToInt32(id)};
+    ShortUrl newUrl = new ShortUrl{OriginalUrl = longUrl, ShortCode = GenerateShortCode(), UserId = userId};
     _context.ShortUrls.Add(newUrl);
     await _context.SaveChangesAsync();
     
@@ -73,6 +81,17 @@ public class UrlController : ControllerBase
       return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
     }
     int userId = Convert.ToInt32(id);
+    // check if it is in cache
+    var cacheKey = $"ShortUrlAnalytics_{shortCode}_{userId}";
+    var cachedData = await _cacheService.GetStringAsync(cacheKey);
+    if (!string.IsNullOrEmpty(cachedData))
+    {
+      var cachedResponse = JsonSerializer.Deserialize<ShortUrlAnalyticsResponse>(cachedData);
+      if (cachedResponse != null)
+      {
+        return Ok(ApiResponse<ShortUrlAnalyticsResponse>.SuccessResponse(cachedResponse, "URL retrieved successfully"));
+      }
+    }
 
     var url = await _context.ShortUrls.FirstOrDefaultAsync(s => s.ShortCode == shortCode && s.UserId == userId);
     if(url == null)
@@ -126,6 +145,12 @@ public class UrlController : ControllerBase
         AverageClicksPerDay = averageClicksPerDay
       }
     };
+    // set time to live for cache
+    var cacheOptions = new DistributedCacheEntryOptions
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) // Cache for 5 minutes
+    };
+    await _cacheService.SetStringAsync(cacheKey, JsonSerializer.Serialize(response), cacheOptions);
     
     return Ok(ApiResponse<ShortUrlAnalyticsResponse>.SuccessResponse(response, "URL retrieved successfully"));
   }
@@ -148,6 +173,9 @@ public class UrlController : ControllerBase
     }
     _context.ShortUrls.Remove(url);
     await _context.SaveChangesAsync();
+    // Invalidate the cache for this URL's analytics
+    var cacheKey = $"ShortUrlAnalytics_{url.ShortCode}_{userId}";
+    await _cacheService.RemoveAsync(cacheKey);
     return NoContent();
   }
   [HttpPut("{shortCode}")]
@@ -175,6 +203,9 @@ public class UrlController : ControllerBase
     existingUrl.OriginalUrl = sanitizer.Sanitize(url.Url);
     existingUrl.UpdatedAt = DateTime.UtcNow;
     await _context.SaveChangesAsync();
+    // Invalidate the cache for this URL's analytics
+    var cacheKey = $"ShortUrlAnalytics_{shortCode}_{userId}";
+    await _cacheService.RemoveAsync(cacheKey);
     return Ok(ApiResponse<ShortUrl>.SuccessResponse(existingUrl, "URL updated successfully"));
   }
 
