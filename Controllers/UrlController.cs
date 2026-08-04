@@ -27,8 +27,8 @@ public class UrlController : ControllerBase
   [HttpPost]
   public async Task<IActionResult> StoreUrl([FromBody] LongUrl url)
   {
-    var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if(!int.TryParse(id, out int userId))
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if(string.IsNullOrEmpty(userId))
     {
       return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
     }
@@ -49,12 +49,11 @@ public class UrlController : ControllerBase
   [HttpGet]
   public async Task<IActionResult> GetUrls()
   {
-    var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if(id == null)
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if(userId == null)
     {
       return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
     }
-    int userId = Convert.ToInt32(id);
 
     List<UrlInfo> urls = await _context.ShortUrls
       .Where(s => s.UserId == userId)
@@ -75,12 +74,12 @@ public class UrlController : ControllerBase
   [HttpGet("{shortCode}")]
   public async Task<IActionResult> GetUrl(string shortCode)
   {
-    var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if(id == null)
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if(userId == null)
     {
       return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized", "User is not authorized"));
     }
-    int userId = Convert.ToInt32(id);
+    
     // check if it is in cache
     var cacheKey = $"ShortUrlAnalytics_{shortCode}_{userId}";
     var cachedData = await _cacheService.GetStringAsync(cacheKey);
@@ -167,7 +166,7 @@ public class UrlController : ControllerBase
     {
       return NotFound(ApiResponse<object>.FailureResponse("Not Found", "URL not found"));
     }
-    if(url.UserId != Convert.ToInt32(userId))
+    if(url.UserId != userId)
     {
       return Forbid();
     }
@@ -191,7 +190,7 @@ public class UrlController : ControllerBase
     {
       return NotFound(ApiResponse<object>.FailureResponse("Not Found", "URL not found"));
     }
-    if(existingUrl.UserId != Convert.ToInt32(userId))
+    if(existingUrl.UserId != userId)
     {
       return Forbid();
     }

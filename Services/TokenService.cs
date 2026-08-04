@@ -19,17 +19,24 @@ public class TokenServices
     _lifeTime = Convert.ToInt32(Environment.GetEnvironmentVariable("JWT_LIFETIME"));
   }
 
-  public string GenerateToken(string userId, string username, string role)
+  public string GenerateToken(JwtInput input)
   {
     var credential = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key)), "HS256");
 
-    var claims = new[]
+    var claims = new List<Claim>
     {
-      new Claim(JwtRegisteredClaimNames.Sub, userId),
-      new Claim(JwtRegisteredClaimNames.Email, username),
+      new Claim(JwtRegisteredClaimNames.Sub, input.Id),
+      new Claim(ClaimTypes.NameIdentifier, input.Id),
+      new Claim(JwtRegisteredClaimNames.Email, input.Email),
       new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-      new Claim("role", role)
+      new Claim(JwtRegisteredClaimNames.FamilyName, input.LastName),
+      new Claim(JwtRegisteredClaimNames.GivenName, input.FirstName)
+      
     };
+    foreach (var r in input.Role)
+    {
+      claims.Add(new Claim(ClaimTypes.Role, r));
+    }
 
     var token = new JwtSecurityToken(
       audience: _audience,
@@ -57,4 +64,13 @@ public class RefreshToken
   public required string Token { get; set; }
   public required string UserName { get; set; }
 
+}
+
+public class JwtInput
+{
+  public required string Id { get; set; }
+  public required string Email { get; set; }
+  public required string FirstName { get; set; }
+  public required string LastName { get; set; }
+  public required string[] Role { get; set; }
 }

@@ -1,33 +1,30 @@
 
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
-public class UrlShortenerContext : DbContext
+public class UrlShortenerContext : IdentityDbContext<ApplicationUser>
 {
-  public DbSet<User> Users { get; set; }
+  public UrlShortenerContext(DbContextOptions<UrlShortenerContext> options) : base(options)
+  {
+  }
   public DbSet<ShortUrl> ShortUrls { get; set; }
   public DbSet<ClickAnalytic> ClickAnalytics { get; set; }
   public DbSet<Refresh> Refreshes { get; set; }
 
-  protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-      string connectionString = $"Server=localhost;Database=UrlShortenerDB;User=root;Password={Environment.GetEnvironmentVariable("DB_PASSWORD")}";
-
-      var serverVersion = new MySqlServerVersion(new Version(8, 0, 46));
-
-      optionsBuilder.UseMySql(connectionString, serverVersion);
-    }
+  
   protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // 1. User Configuration
-        modelBuilder.Entity<User>(entity =>
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<ApplicationUser>(entity =>
         {
             entity.HasKey(u => u.Id);
+            entity.Property(u => u.FirstName).HasMaxLength(100);
+            entity.Property(u => u.LastName).HasMaxLength(100);
             entity.Property(u => u.Email).IsRequired().HasMaxLength(256);
-            entity.HasIndex(u => u.Email).IsUnique(); // Quick lookups for login
-            entity.Property(u => u.PasswordHash).IsRequired().HasMaxLength(512);
+            entity.HasIndex(u => u.Email).IsUnique();
         });
-
         // 2. ShortUrl Configuration & Relationship with User
         modelBuilder.Entity<ShortUrl>(entity =>
         {
