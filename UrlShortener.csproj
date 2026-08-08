@@ -23,6 +23,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="UrlShortener.Tests\**" />
+    <None Remove="UrlShortener.Tests\**" />
+    <Content Remove="UrlShortener.Tests\**" />
+    <EmbeddedResource Remove="UrlShortener.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
   <None Update=".env">
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </None>

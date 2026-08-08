@@ -30,7 +30,7 @@ public class UrlShortenerContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasKey(s => s.Id);
             entity.Property(s => s.OriginalUrl).IsRequired().HasMaxLength(2048);
-            entity.Property(s => s.ShortCode).IsRequired().HasMaxLength(50);
+            entity.Property(s => s.ShortCode).HasMaxLength(50);
             entity.HasIndex(s => s.ShortCode).IsUnique(); // Quick lookups for redirects
 
             // Relationship: User (1) -> ShortUrls (Many)
